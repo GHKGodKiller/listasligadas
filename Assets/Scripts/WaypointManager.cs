@@ -80,7 +80,7 @@ public class WaypointManager : MonoBehaviour
     public void ClearLinkList()
     {
         waypoints.Clear();
-        Debug.Log("[CLEAR] La lista ha sido vaciada.");
+        Debug.Log("[C] La lista ha sido vaciada.");
     }
 
     public void AddNodeToLinkedList(string value, int position)
@@ -88,7 +88,7 @@ public class WaypointManager : MonoBehaviour
         if (position <= 0 || waypoints.Count == 0)
         {
             waypoints.AddFirst(value);
-            Debug.Log($"[ADD] '{value}' agregado al inicio.");
+            Debug.Log($"[Add] '{value}' agregado al inicio.");
             return;
         }
 
@@ -104,12 +104,12 @@ public class WaypointManager : MonoBehaviour
         if (current != null)
         {
             waypoints.AddAfter(current, value);
-            Debug.Log($"[ADD] '{value}' agregado en la posición {position}.");
+            Debug.Log($"[Add] '{value}' agregado en la posición {position}.");
         }
         else
         {
             waypoints.AddLast(value);
-            Debug.Log($"[ADD] '{value}' agregado al final.");
+            Debug.Log($"[Add] '{value}' agregado al final.");
         }
     }
 
@@ -117,7 +117,7 @@ public class WaypointManager : MonoBehaviour
     {
         if (waypoints.Count == 0)
         {
-            Debug.LogWarning("[REMOVE] La lista está vacía, no se puede remover nada.");
+            Debug.LogWarning("[Remove] La lista está vacía, no se puede remover nada.");
             return;
         }
 
@@ -132,12 +132,12 @@ public class WaypointManager : MonoBehaviour
 
         if (current != null)
         {
-            Debug.Log($"[REMOVE] Se eliminó el nodo '{current.Value}' de la posición {position}.");
+            Debug.Log($"[Remove] Se eliminó el nodo '{current.Value}' de la posición {position}.");
             waypoints.Remove(current);
         }
         else
         {
-            Debug.LogWarning($"[REMOVE] Posición {position} fuera de rango.");
+            Debug.LogWarning($"[Remove] Posición {position} fuera de rango.");
         }
     }
 
@@ -145,7 +145,7 @@ public class WaypointManager : MonoBehaviour
     {
         if (waypoints.Count <= 1)
         {
-            Debug.Log("[INVERT] La lista tiene 1 o 0 elementos, no es necesario invertir.");
+            Debug.Log("[Invert] La lista tiene 1 o 0 elementos, no es necesario invertir.");
             return;
         }
 
@@ -159,6 +159,6 @@ public class WaypointManager : MonoBehaviour
         }
 
         waypoints = reversedList;
-        Debug.Log("[INVERT] El orden de la lista ha sido invertido.");
+        Debug.Log("[Invert] El orden de la lista ha sido invertido.");
     }
 }
