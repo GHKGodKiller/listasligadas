@@ -1,156 +1,147 @@
 using UnityEngine;
 using System.Collections.Generic;
-using UnityEngine.InputSystem;
 
 public class WaypointManager : MonoBehaviour
 {
-    private LinkedList<string> waypoints = new LinkedList<string>();
-    private int waypointCounter = 0;
+    [Header("Nodos Predefinidos en Escena")]
+    public Transform[] nodosIniciales = new Transform[5];
+
+    [Header("Prefab y Generación")]
+    public GameObject nodePrefab;
+    public Vector2 areaGeneracion = new Vector2(8f, 4f);
+
+    [Header("Validación de Espacio Seguro")]
+    [Tooltip("Arrastra aquí los mismos obstáculos que tiene el Agente")]
+    public Transform[] obstaculosEscena;
+    [Tooltip("Debe ser mayor al 'Obstacle Radius' de tu Agente")]
+    public float distanciaMinimaObstaculo = 2.5f; 
+
+    public LinkedList<Transform> waypoints = new LinkedList<Transform>();
 
     private void Start()
     {
-        AddNodeToLinkedList("Inicio", 0);
-        AddNodeToLinkedList("Punto A", 1);
-        AddNodeToLinkedList("Destino", 2);
-
-        MostrarInstrucciones();
+        foreach (Transform nodo in nodosIniciales)
+        {
+            if (nodo != null) waypoints.AddLast(nodo);
+        }
         ShowLinkedList();
-    }
-
-    private void MostrarInstrucciones()
-    {
-        Debug.Log(
-            " Controles de los Waypoints \n" +
-            "   - Tecla [Espacio]: Mostrar lista\n" +
-            "   - Tecla [A]: Agregar nodo\n" +
-            "   - Tecla [R]: Remover nodo\n" +
-            "   - Tecla [I]: Invertir lista\n" +
-            "   - Tecla [C]: Limpiar lista\n"
-        );
-    }
-
-    private void Update()
-    {
-        if (Keyboard.current == null) return;
-
-        if (Keyboard.current.spaceKey.wasPressedThisFrame)
-        {
-            ShowLinkedList();
-        }
-        else if (Keyboard.current.aKey.wasPressedThisFrame)
-        {
-            waypointCounter++;
-            AddNodeToLinkedList($"Nuevo Punto #{waypointCounter}", 1);
-            ShowLinkedList();
-        }
-        else if (Keyboard.current.rKey.wasPressedThisFrame)
-        {
-            RemoveNodeFromLinkedList(1);
-            ShowLinkedList();
-        }
-        else if (Keyboard.current.iKey.wasPressedThisFrame)
-        {
-            InvertLinkList();
-            ShowLinkedList();
-        }
-        else if (Keyboard.current.cKey.wasPressedThisFrame)
-        {
-            ClearLinkList();
-            ShowLinkedList();
-        }
     }
 
     public void ShowLinkedList()
     {
-        Debug.Log("Estado de la lista");
+        Debug.Log("");
         if (waypoints.Count == 0)
         {
-            Debug.Log("La lista está vacía.");
+            Debug.Log("");
             return;
         }
 
         int index = 0;
-        foreach (string wp in waypoints)
+        foreach (Transform wp in waypoints)
         {
-            Debug.Log($"Nodo [{index}]: {wp}");
+            Debug.Log($"Posición [{index}]: {wp.name}");
             index++;
         }
     }
 
     public void ClearLinkList()
     {
+        // Opcional: Si quieres que al limpiar la lista también se destruyan TODOS los nodos físicos
+        // foreach (Transform wp in waypoints) { if (wp != null) Destroy(wp.gameObject); }
+        
         waypoints.Clear();
-        Debug.Log("[C] La lista ha sido vaciada.");
+        Debug.Log("[CLEAR] Se vació la lista ligada.");
+        ShowLinkedList();
     }
 
-    public void AddNodeToLinkedList(string value, int position)
+    public void AddNodeToLinkedList()
     {
-        if (position <= 0 || waypoints.Count == 0)
+        if (nodePrefab == null)
         {
-            waypoints.AddFirst(value);
-            Debug.Log($"[Add] '{value}' agregado al inicio.");
+            Debug.LogWarning("");
             return;
         }
 
-        LinkedListNode<string> current = waypoints.First;
-        int currentIndex = 0;
+        Vector2 randomPos = Vector2.zero;
+        bool posicionSegura = false;
+        int intentos = 0;
+        int maxIntentos = 30; 
 
-        while (current != null && currentIndex < position - 1)
+        while (!posicionSegura && intentos < maxIntentos)
         {
-            current = current.Next;
-            currentIndex++;
+            randomPos = new Vector2(
+                Random.Range(-areaGeneracion.x, areaGeneracion.x), 
+                Random.Range(-areaGeneracion.y, areaGeneracion.y)
+            );
+            
+            posicionSegura = true; 
+
+            if (obstaculosEscena != null)
+            {
+                foreach (Transform obstaculo in obstaculosEscena)
+                {
+                    if (obstaculo != null)
+                    {
+                        float distancia = Vector2.Distance(randomPos, obstaculo.position);
+                        if (distancia < distanciaMinimaObstaculo)
+                        {
+                            posicionSegura = false; 
+                            break; 
+                        }
+                    }
+                }
+            }
+            intentos++;
         }
 
-        if (current != null)
+        if (!posicionSegura)
         {
-            waypoints.AddAfter(current, value);
-            Debug.Log($"[Add] '{value}' agregado en la posición {position}.");
-        }
-        else
-        {
-            waypoints.AddLast(value);
-            Debug.Log($"[Add] '{value}' agregado al final.");
-        }
-    }
-
-    public void RemoveNodeFromLinkedList(int position)
-    {
-        if (waypoints.Count == 0)
-        {
-            Debug.LogWarning("[Remove] La lista está vacía, no se puede remover nada.");
+            Debug.LogWarning("");
             return;
         }
 
-        LinkedListNode<string> current = waypoints.First;
-        int currentIndex = 0;
+        GameObject newNode = Instantiate(nodePrefab, randomPos, Quaternion.identity);
+        newNode.name = $"Nodo_Extra_{waypoints.Count}";
 
-        while (current != null && currentIndex < position)
+        if (waypoints.Count > 0)
         {
-            current = current.Next;
-            currentIndex++;
-        }
-
-        if (current != null)
-        {
-            Debug.Log($"[Remove] Se eliminó el nodo '{current.Value}' de la posición {position}.");
-            waypoints.Remove(current);
+            waypoints.AddAfter(waypoints.First, newNode.transform);
         }
         else
         {
-            Debug.LogWarning($"[Remove] Posición {position} fuera de rango.");
+            waypoints.AddFirst(newNode.transform);
         }
+        
+        Debug.Log($"[ADD] {newNode.name} instanciado en posición segura {randomPos}.");
+        ShowLinkedList();
+    }
+
+    public void RemoveNodeFromLinkedList()
+    {
+        if (waypoints.Count > 0)
+        {
+            Transform removedNode = waypoints.First.Value;
+            waypoints.RemoveFirst();
+            
+            if (removedNode != null)
+            {
+                Destroy(removedNode.gameObject);
+                Debug.Log($"[REMOVE] El nodo {removedNode.name} fue sacado de la lista");
+            }
+        }
+        else
+        {
+            Debug.LogWarning("[REMOVE] La lista ya está vacía.");
+        }
+        ShowLinkedList();
     }
 
     public void InvertLinkList()
     {
-        if (waypoints.Count <= 1)
-        {
-            Debug.Log("[Invert] La lista tiene 1 o 0 elementos, no es necesario invertir.");
-            return;
-        }
+        if (waypoints.Count <= 1) return;
 
-        LinkedList<string> reversedList = new LinkedList<string>();
-        LinkedListNode<string> current = waypoints.Last;
+        LinkedList<Transform> reversedList = new LinkedList<Transform>();
+        LinkedListNode<Transform> current = waypoints.Last;
 
         while (current != null)
         {
@@ -159,6 +150,7 @@ public class WaypointManager : MonoBehaviour
         }
 
         waypoints = reversedList;
-        Debug.Log("[Invert] El orden de la lista ha sido invertido.");
+        Debug.Log("[INVERT] El orden de los nodos se ha invertido.");
+        ShowLinkedList();
     }
 }
